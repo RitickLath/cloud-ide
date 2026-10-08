@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -25,19 +25,47 @@ import { FolderGit2, Search, Globe, Lock, GitPullRequest, Laptop, Bot, Component
 import { TemplateCard } from '../molecule/TemplateCard'
 import { TEMPLATES } from '@/constants/template'
 
-interface CreateWorkspaceModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onCreate: (framework: string) => void
-}
+import { Loader2 } from 'lucide-react'
+import { useCreateProject } from '@/features/mutations/useCreateProject'
+import { useRouter } from 'next/navigation'
 
-export const CreateWorkspaceModal = ({ open, onOpenChange, onCreate }: CreateWorkspaceModalProps) => {
+export const CreateWorkspaceModal = () => {
+  const router = useRouter()
   const [view, setView] = useState<'template' | 'git'>('template')
   const [selectedFramework, setSelectedFramework] = useState<string>('NEXTJS')
   const [activeTab, setActiveTab] = useState<string>('All')
   const [search, setSearch] = useState('')
   const [workspaceName, setWorkspaceName] = useState('')
   const [gitUrl, setGitUrl] = useState('')
+  
+  const { createWithTemplate, createWithGit } = useCreateProject();
+  const isPending = createWithTemplate.isPending || createWithGit.isPending;
+
+  const handleSubmit = async () => {
+    try {
+      let createdProjectId = '';
+      if (view === 'template') {
+        const res = await createWithTemplate.mutateAsync({
+          framework: selectedFramework,
+          name: workspaceName
+        });
+        createdProjectId = res?.data?.projectId;
+      } else {
+        const res = await createWithGit.mutateAsync({
+          gitUrl,
+          name: workspaceName
+        });
+        createdProjectId = res?.data?.projectId;
+      }
+      
+      if (createdProjectId) {
+        console.log("Hit", createdProjectId)
+        router.push(`/project/${createdProjectId}`);
+      }
+    } catch (error) {
+      console.error("Failed to create workspace:", error);
+    }
+  }
 
   const filteredTemplates = TEMPLATES.filter(t => {
     const matchesTab = activeTab === 'All' || t.category === activeTab
@@ -45,17 +73,9 @@ export const CreateWorkspaceModal = ({ open, onOpenChange, onCreate }: CreateWor
     return matchesTab && matchesSearch
   })
 
-  // Reset view when modal closes/opens
-  useEffect(() => {
-    if (open) {
-      setView('template')
-      setWorkspaceName('')
-      setGitUrl('')
-    }
-  }, [open])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={true}>
       <DialogContent className="sm:max-w-[800px] w-full p-0 gap-0 overflow-hidden bg-background border-border shadow-2xl">
         <div className="p-6 pb-4 border-b border-border">
           <DialogHeader className="mb-4">
@@ -202,13 +222,17 @@ export const CreateWorkspaceModal = ({ open, onOpenChange, onCreate }: CreateWor
             </Button>}
             <Button 
               size="sm" 
-              onClick={() => onCreate(view === 'template' ? selectedFramework : 'GIT_IMPORT')} 
+              disabled={isPending || (view === 'template' ? (!selectedFramework || !workspaceName) : (!gitUrl || !workspaceName))}
+              onClick={handleSubmit}
               className="h-8 text-xs px-4"
             >
+              {isPending && <Loader2 className="mr-2 size-3.5 animate-spin" />}
               {view === 'template' ? 'Create Workspace' : 'Import & Clone'}
-              <kbd className="ml-2 pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                <span className="text-xs">↵</span> Enter
-              </kbd>
+              {!isPending && (
+                <kbd className="ml-2 pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  <span className="text-xs">↵</span> Enter
+                </kbd>
+              )}
             </Button>
           </div>
         </DialogFooter>

@@ -1,13 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto } from './project.dto';
 import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly workspaceService: WorkspaceService) {}
+  constructor(
+    private readonly workspaceService: WorkspaceService,
+  ) { }
 
   async createProjectV1(createDto: CreateProjectDto) {
-    await this.workspaceService.create(createDto.framework);
-    return { msg: 'This action adds a new project v1' };
+    const projectId = await this.workspaceService.createProject(createDto.framework);
+    return { msg: 'This action adds a new project v1', projectId };
+  }
+
+  async getFileTree(projectId: string) {
+    const projects = await this.workspaceService.getAllProjectIds();
+    
+    if (!projects?.includes(projectId)) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    return this.workspaceService.getFileTree(projectId);
   }
 }

@@ -20,10 +20,11 @@ export const ThemeSelector = () => {
     <Select
       value={theme}
       onValueChange={(val) => {
+        localStorage.setItem("theme", val);
         if (val) setTheme(val)
       }}
     >
-      <SelectTrigger size="sm" className="w-[180px] h-8 text-xs font-mono">
+      <SelectTrigger size="sm" className="w-45 h-8 text-xs font-mono">
         <div className="flex items-center gap-2 truncate">
           <Palette className="size-3.5 text-primary shrink-0" />
           <SelectValue placeholder="Select Theme" />

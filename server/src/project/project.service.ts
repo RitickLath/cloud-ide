@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProjectDto } from './project.dto';
+import { CreateProjectDto, CreateProjectGitDto } from './project.dto';
 import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
@@ -9,8 +9,13 @@ export class ProjectService {
   ) { }
 
   async createProjectV1(createDto: CreateProjectDto) {
-    const projectId = await this.workspaceService.createProject(createDto.framework);
+    const projectId = await this.workspaceService.createProject(createDto.framework, createDto.name);
     return { msg: 'This action adds a new project v1', projectId };
+  }
+
+  async createProjectGit(gitDto: CreateProjectGitDto) {
+    const projectId = await this.workspaceService.createProjectGit(gitDto.gitUrl, gitDto.name);
+    return { msg: 'Git import initiated', projectId };
   }
 
   async getFileTree(projectId: string) {

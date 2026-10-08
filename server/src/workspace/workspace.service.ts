@@ -29,10 +29,11 @@ export class WorkspaceService {
     return dirTree(projectPath);
   }
 
-  async createProject(framework: Framework) {
+  async createProject(framework: Framework, name: string) {
     const rootPath = process.cwd();
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
-    const projectId = uuidv4();
+    // Sanitize the workspace name to create a valid directory name
+    const projectId = name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
     
     const command = this.frameworkConf[framework];
     if (!command) {
@@ -42,6 +43,18 @@ export class WorkspaceService {
     const { stdout, stderr } = await execAsync(`mkdir -p "${projectPath}/${projectId}" && cd "${projectPath}/${projectId}" && ${command}`);
     if (stderr) console.error(stderr);
     console.log(stdout);
+    
+    return projectId;
+  }
+
+  async createProjectGit(gitUrl: string, name: string) {
+    const rootPath = process.cwd();
+    const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
+    const projectId = name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
+    
+    // TODO: To Implement actual git clone logic here.
+    const { stdout, stderr } = await execAsync(`mkdir -p "${projectPath}/${projectId}"`);
+    if (stderr) console.error(stderr);
     
     return projectId;
   }

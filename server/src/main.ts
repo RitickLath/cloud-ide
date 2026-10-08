@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
-  
+
   app
     .setGlobalPrefix('api')
     .useGlobalPipes(new ValidationPipe({
@@ -21,6 +22,8 @@ async function bootstrap() {
       type: VersioningType.URI,
       defaultVersion: '1'
     });
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

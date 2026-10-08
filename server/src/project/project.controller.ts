@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Version } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Version } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './project.dto';
 
@@ -6,10 +6,13 @@ import { CreateProjectDto } from './project.dto';
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) { }
 
-  @Version('1')
   @Post('')
   async createProjectV1(@Body() createDto: CreateProjectDto) {
-    const project = await this.projectService.createProjectV1(createDto);
-    return project;
+    return await this.projectService.createProjectV1(createDto);
+  }
+
+  @Get(':projectId/file-structure')
+  async getFileTree(@Param('projectId') projectId: string) {
+    return this.projectService.getFileTree(projectId);
   }
 }

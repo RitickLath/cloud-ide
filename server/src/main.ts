@@ -1,8 +1,26 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.enableCors();
+  
+  app
+    .setGlobalPrefix('api')
+    .useGlobalPipes(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true
+      }
+    }))
+    .enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: '1'
+    });
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

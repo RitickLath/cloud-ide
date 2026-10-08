@@ -24,7 +24,7 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="dark" forcedTheme="dark">
           <QueryProvider>
             {children}
           </QueryProvider>

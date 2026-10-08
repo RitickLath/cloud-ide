@@ -1,40 +1,17 @@
 "use client"
-import React, { useEffect, useRef, useState } from 'react'
-import Editor, { useMonaco } from '@monaco-editor/react'
-import { useEditorTheme } from '@/store/useEditorTheme'
-import axios from 'axios'
+import Editor from '@monaco-editor/react'
 import ThemeSelector from '@/components/molecule/ThemeSelector'
 import TopTabs from './TopTabs'
 import useActiveTabs from '@/store/useActiveTabs'
+import { useLoadEditorTheme } from '@/hooks/useLoadEditorTheme'
 
 const Sandbox = () => {
-    const { theme, setThemeData, themeData } = useEditorTheme((state) => state)
-    const monaco = useMonaco()
     const { workingTab, activeTabs } = useActiveTabs();
+    const { isThemeLoaded, theme, editorBg, headerBg, toolbarBg, fgColor } = useLoadEditorTheme();
 
-    useEffect(() => {
-        if (!monaco || !theme) return
-        console.log("active Tabs, ",activeTabs);
-
-        const applyTheme = async () => {
-            try {
-                const response = await axios.get(`/themes/${theme}.json`)
-                monaco.editor.defineTheme("prefix", response.data)
-                monaco.editor.setTheme("prefix")
-                setThemeData(response.data)
-            } catch (error) {
-                console.error("Failed to load theme:", error)
-            }
-        }
-
-        applyTheme()
-    }, [theme, monaco, setThemeData])
-
-    const colors = themeData?.colors || {}
-    const editorBg = colors['editor.background'] || 'var(--background)'
-    const headerBg = colors['editorGroupHeader.tabsBackground'] || (editorBg === '#FFFFFF' ? '#f3f4f6' : '#1e1e1e')
-    const toolbarBg = colors['editor.background'] || 'var(--muted)'
-    const fgColor = colors['editor.foreground'] || 'var(--foreground)'
+    if (!isThemeLoaded) return (
+        <div className='flex flex-col h-screen w-[50vw] border-r border-border'></div>
+    )
 
     return (
         <div className="flex flex-col h-screen w-[50vw] border-r border-border" style={{ backgroundColor: editorBg }}>

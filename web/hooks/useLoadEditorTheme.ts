@@ -33,6 +33,9 @@ export const useLoadEditorTheme = () => {
     const headerBg = colors['editorGroupHeader.tabsBackground'] || (editorBg === '#FFFFFF' ? '#f3f4f6' : '#1e1e1e')
     const toolbarBg = colors['editor.background'] || 'var(--muted)'
     const fgColor = colors['editor.foreground'] || 'var(--foreground)'
+    
+    const sideBarBg = colors['sideBar.background'] || colors['editor.background'] || '#1e1e1e'
+    const activityBarBg = colors['activityBar.background'] || sideBarBg
 
     return {
         isThemeLoaded,
@@ -40,6 +43,8 @@ export const useLoadEditorTheme = () => {
         editorBg,
         headerBg,
         toolbarBg,
-        fgColor
+        fgColor,
+        sideBarBg,
+        activityBarBg
     }
 }

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FileIcon, ChevronDown, ChevronRight } from '../atom/FileIcon';
+import useEditorStore from '@/store/useEditorStore';
+import { useSocket } from '@/store/useSocket';
 
 const FileTreeNode = ({ 
   item, 
@@ -10,13 +12,46 @@ const FileTreeNode = ({
 
   const isFolder = Array.isArray(item?.children);
   const isExpanded = !!expandedPaths[item.path];
+  const {socket} = useSocket()
+  const {openFile} = useEditorStore();
+
+  const handleOpenFile = (path: string, fileName: string) => {
+    const extension = fileName.split('.').pop() || '';
+
+    // First open tab immediately with empty or existing content
+    openFile({
+      path,
+      fileName,
+      extension,
+      content: '',
+    });
+
+    // Request file content via socket if connected
+    socket?.emit(
+      'file-change',
+      { action: 'read', filePath: path },
+      (res: any) => {
+        if (res?.content !== undefined) {
+          useEditorStore.getState().updateFileContent(path, res.content);
+        }
+      }
+    );
+  };
+
+  const handleRowClick = () => {
+    if (isFolder) {
+      togglePath(item.path);
+    } else {
+      handleOpenFile(item.path, item.name);
+    }
+  };
 
   return (
     <div className="select-none flex flex-col font-mono text-sm text-inherit">
       <div 
-        className="flex items-center hover:bg-white/10 cursor-pointer py-1 pr-2"
+        className="flex items-center hover:bg-white/10 cursor-pointer py-1 pr-2 transition-colors"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        onClick={() => isFolder && togglePath(item.path)}
+        onClick={handleRowClick}
       >
         {/* Chevron Icon Container */}
         <div className="w-4 h-4 flex items-center justify-center mr-1 text-gray-500">

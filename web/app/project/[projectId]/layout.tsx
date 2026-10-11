@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Node from "@/components/molecule/Node";
 import { useGetProjectTree } from "@/features/queries/useGetProjectTree";
 import { useParams } from "next/navigation";
@@ -14,18 +14,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/atom/dialog";
+import { useSocket } from "@/store/useSocket";
+import { io } from "socket.io-client";
 
 const ProjectLayout = ({children}: {
     children: React.ReactNode
 }) => {
     const params = useParams();
     const projectId = params?.projectId as string;
-    const { data, isLoading } = useGetProjectTree(projectId);
+    const { data, isLoading, isError, isSuccess } = useGetProjectTree(projectId);
     
     // Sandbox theme values
     const { isThemeLoaded, editorBg, headerBg, toolbarBg, fgColor, sideBarBg, activityBarBg } = useLoadEditorTheme();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const setSocket = useSocket((state) => state.setSocket);
+    const setIsConnected = useSocket((state) => state.setIsConnected);
+
+    useEffect(() => {
+        // Only establish connection if project actually exists and query succeeded
+        if (!projectId || isError || !isSuccess || !data) return;
+
+        const socket = io('http://localhost:3002/workspace', {
+            withCredentials: true,
+            transports: ['websocket'],
+        });
+
+        socket.on('connect', () => {
+            setIsConnected(true);
+            socket.emit('join-project', { projectId });
+        });
+
+        socket.on('disconnect', () => {
+            setIsConnected(false);
+        });
+
+        setSocket(socket);
+
+        return () => {
+            socket.disconnect();
+            setSocket(null);
+            setIsConnected(false);
+        };
+    }, [projectId, isSuccess, isError, data, setSocket, setIsConnected]);
 
     if (!projectId) return null;
     

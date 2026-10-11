@@ -8,7 +8,7 @@ interface EditorThemeState {
 }
 
 export const useEditorTheme = create<EditorThemeState>()((set) => ({
-    theme: localStorage.getItem("theme") || "IDLE",
+    theme: "IDLE",
     themeData: null,
     setTheme: (theme) => set({ theme }),
     setThemeData: (data) => set({ themeData: data }),

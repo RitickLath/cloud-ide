@@ -16,7 +16,7 @@ const Sandbox = () => {
         <div className="flex flex-col h-full w-full" style={{ backgroundColor: editorBg }}>
             
             {/* Tabs Container */}
-            <div className='flex gap-0 overflow-x-auto border-b border-border [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' style={{ backgroundColor: headerBg }}>
+            <div className='flex gap-0 overflow-x-auto border-b border-border [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none' style={{ backgroundColor: headerBg }}>
                 {activeTabs.map((tab: any) => (
                     <TopTabs 
                         key={tab.filename}

@@ -95,9 +95,14 @@ export class WatchmanGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: FileChangeEvent,
   ) {
-    await this.watchmanService.handleFileOperation(payload);
+    const result = await this.watchmanService.handleFileOperation(payload);
 
-    client.to(payload.projectId).emit('file-change', payload);
+    // Only broadcast mutating changes (create, edit, save, delete, rename, move) to peers, not read
+    if (payload.action !== 'read' && payload.projectId) {
+      client.to(payload.projectId).emit('file-change', payload);
+    }
+
+    return result;
   }
 
   @SubscribeMessage('folder-change')

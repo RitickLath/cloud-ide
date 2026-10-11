@@ -5,11 +5,8 @@ import { AppService } from './app.service';
 import { DomainModule } from './domain/domain.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    DomainModule
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DomainModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

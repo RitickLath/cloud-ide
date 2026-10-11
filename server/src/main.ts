@@ -10,17 +10,19 @@ async function bootstrap() {
 
   app
     .setGlobalPrefix('api')
-    .useGlobalPipes(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true
-      }
-    }))
+    .useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    )
     .enableVersioning({
       type: VersioningType.URI,
-      defaultVersion: '1'
+      defaultVersion: '1',
     });
   app.useGlobalInterceptors(new ResponseInterceptor());
 

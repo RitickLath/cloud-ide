@@ -4,7 +4,7 @@ import { CreateProjectDto, CreateProjectGitDto } from './project.dto';
 
 @Controller('project')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post('')
   async createProjectV1(@Body() createDto: CreateProjectDto) {

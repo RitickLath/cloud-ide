@@ -1,8 +1,8 @@
-import Sandbox from '@/components/molecule/Sandbox';
+import Sandbox from "@/components/molecule/Sandbox"
 
 const ProjectPage = () => {
   return (
-    <div className="w-full h-full">
+    <div className="h-full w-full">
       <Sandbox />
     </div>
   )

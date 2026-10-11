@@ -38,7 +38,9 @@ export class WatchmanGateway
   // GATEWAY LIFECYCLE HOOKS
 
   afterInit(server: Server) {
-    this.logger.log('Watchman WebSocket Gateway initialized on port 3002 (/workspace)');
+    this.logger.log(
+      'Watchman WebSocket Gateway initialized on port 3002 (/workspace)',
+    );
   }
 
   handleConnection(client: Socket) {

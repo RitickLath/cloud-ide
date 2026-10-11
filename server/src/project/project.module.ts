@@ -8,4 +8,4 @@ import { WorkspaceModule } from '../workspace/workspace.module';
   controllers: [ProjectController],
   providers: [ProjectService],
 })
-export class ProjectModule { }
+export class ProjectModule {}

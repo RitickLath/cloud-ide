@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand"
 
 interface EditorThemeState {
   theme: string
@@ -8,8 +8,8 @@ interface EditorThemeState {
 }
 
 export const useEditorTheme = create<EditorThemeState>()((set) => ({
-    theme: "IDLE",
-    themeData: null,
-    setTheme: (theme) => set({ theme }),
-    setThemeData: (data) => set({ themeData: data }),
+  theme: "IDLE",
+  themeData: null,
+  setTheme: (theme) => set({ theme }),
+  setThemeData: (data) => set({ themeData: data }),
 }))

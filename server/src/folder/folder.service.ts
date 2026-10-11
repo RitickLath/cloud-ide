@@ -14,7 +14,9 @@ export class FolderService {
       case 'rename':
         return this.rename(payload);
       default:
-        throw new Error(`Unsupported folder action: ${(payload as any).action}`);
+        throw new Error(
+          `Unsupported folder action: ${(payload as any).action}`,
+        );
     }
   }
 

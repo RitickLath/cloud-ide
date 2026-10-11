@@ -10,6 +10,6 @@ import frameworkConfig from '../config/framework.config';
     ConfigModule.forFeature(frameworkConfig),
   ],
   providers: [WorkspaceService],
-  exports: [WorkspaceService]
+  exports: [WorkspaceService],
 })
-export class WorkspaceModule { }
+export class WorkspaceModule {}

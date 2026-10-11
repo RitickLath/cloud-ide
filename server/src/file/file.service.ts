@@ -25,7 +25,12 @@ export class FileService {
 
     const rootPath = process.cwd();
     if (projectId) {
-      return path.join(rootPath, this.workspaceConf.rootPath, projectId, filePath);
+      return path.join(
+        rootPath,
+        this.workspaceConf.rootPath,
+        projectId,
+        filePath,
+      );
     }
 
     return path.join(rootPath, this.workspaceConf.rootPath, filePath);
@@ -84,11 +89,17 @@ export class FileService {
 
   async read(payload: FileChangeEvent) {
     try {
-      const fullPath = this.resolveFilePath(payload.filePath, payload.projectId);
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
       const content = await fs.readFile(fullPath, 'utf-8');
       return { success: true, content, filePath: payload.filePath };
     } catch (error: any) {
-      this.logger.error(`Failed to read file: ${payload.filePath}`, error.stack);
+      this.logger.error(
+        `Failed to read file: ${payload.filePath}`,
+        error.stack,
+      );
       return { success: false, content: '', error: error.message };
     }
   }

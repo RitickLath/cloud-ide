@@ -1,79 +1,73 @@
-import React, { useState } from 'react';
-import { FileIcon, ChevronDown, ChevronRight } from '../atom/FileIcon';
-import useEditorStore from '@/store/useEditorStore';
-import { useSocket } from '@/store/useSocket';
+import React, { useState } from "react"
+import { FileIcon, ChevronDown, ChevronRight } from "../atom/FileIcon"
+import useEditorStore from "@/store/useEditorStore"
+import { useSocket } from "@/store/useSocket"
 
-const FileTreeNode = ({ 
-  item, 
-  depth = 0, 
-  expandedPaths, 
-  togglePath 
-}: any) => {
-
-  const isFolder = Array.isArray(item?.children);
-  const isExpanded = !!expandedPaths[item.path];
-  const {socket} = useSocket()
-  const {openFile} = useEditorStore();
+const FileTreeNode = ({ item, depth = 0, expandedPaths, togglePath }: any) => {
+  const isFolder = Array.isArray(item?.children)
+  const isExpanded = !!expandedPaths[item.path]
+  const { socket } = useSocket()
+  const { openFile } = useEditorStore()
 
   const handleOpenFile = (path: string, fileName: string) => {
-    const extension = fileName.split('.').pop() || '';
+    const extension = fileName.split(".").pop() || ""
 
     // First open tab immediately with empty or existing content
     openFile({
       path,
       fileName,
       extension,
-      content: '',
-    });
+      content: "",
+    })
 
     // Request file content via socket if connected
     socket?.emit(
-      'file-change',
-      { action: 'read', filePath: path },
+      "file-change",
+      { action: "read", filePath: path },
       (res: any) => {
         if (res?.content !== undefined) {
-          useEditorStore.getState().updateFileContent(path, res.content);
+          useEditorStore.getState().updateFileContent(path, res.content)
         }
       }
-    );
-  };
+    )
+  }
 
   const handleRowClick = () => {
     if (isFolder) {
-      togglePath(item.path);
+      togglePath(item.path)
     } else {
-      handleOpenFile(item.path, item.name);
+      handleOpenFile(item.path, item.name)
     }
-  };
+  }
 
   return (
-    <div className="select-none flex flex-col font-mono text-sm text-inherit">
-      <div 
-        className="flex items-center hover:bg-white/10 cursor-pointer py-1 pr-2 transition-colors"
+    <div className="flex flex-col font-mono text-sm text-inherit select-none">
+      <div
+        className="flex cursor-pointer items-center py-1 pr-2 transition-colors hover:bg-white/10"
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={handleRowClick}
       >
         {/* Chevron Icon Container */}
-        <div className="w-4 h-4 flex items-center justify-center mr-1 text-gray-500">
+        <div className="mr-1 flex h-4 w-4 items-center justify-center text-gray-500">
           {isFolder && (isExpanded ? <ChevronDown /> : <ChevronRight />)}
         </div>
-        
+
         {/* File/Folder Icon Container */}
-        <div className="w-4 h-4 flex items-center justify-center mr-2">
+        <div className="mr-2 flex h-4 w-4 items-center justify-center">
           <FileIcon name={item.name} isFolder={isFolder} />
         </div>
-        
+
         {/* File/Folder Name */}
         <span className="truncate">{item.name}</span>
       </div>
-      
+
       {/* Recursive Children Render */}
       {isFolder && isExpanded && (
         <div className="flex flex-col">
           {item.children.map((child: any) => (
-            <FileTreeNode 
-              key={child.path} 
-              item={child} 
+            <FileTreeNode
+              key={child.path}
+              item={child}
               depth={depth + 1}
               expandedPaths={expandedPaths}
               togglePath={togglePath}
@@ -82,28 +76,30 @@ const FileTreeNode = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 const Node = ({ list, isVisible }: any) => {
-  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
+  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
+    {}
+  )
 
   const togglePath = (path: string) => {
-    setExpandedPaths(prev => ({
+    setExpandedPaths((prev) => ({
       ...prev,
-      [path]: !prev[path]
-    }));
-  };
+      [path]: !prev[path],
+    }))
+  }
 
-  if (!isVisible || !list) return null;
+  if (!isVisible || !list) return null
 
   return (
-    <div className="w-full h-full bg-transparent overflow-y-auto overflow-x-hidden pt-2 pb-4">
+    <div className="h-full w-full overflow-x-hidden overflow-y-auto bg-transparent pt-2 pb-4">
       <div className="flex flex-col">
         {list.children?.map((item: any) => (
-          <FileTreeNode 
-            key={item.path} 
-            item={item} 
+          <FileTreeNode
+            key={item.path}
+            item={item}
             depth={0}
             expandedPaths={expandedPaths}
             togglePath={togglePath}
@@ -111,7 +107,7 @@ const Node = ({ list, isVisible }: any) => {
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Node;
+export default Node

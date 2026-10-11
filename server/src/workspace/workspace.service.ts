@@ -11,10 +11,12 @@ import type { ConfigType } from '@nestjs/config';
 @Injectable()
 export class WorkspaceService {
   constructor(
-    @Inject(workspaceConfig.KEY) private workspaceConf: ConfigType<typeof workspaceConfig>,
-    @Inject(frameworkConfig.KEY) private frameworkConf: ConfigType<typeof frameworkConfig>,
-  ) { }
-  
+    @Inject(workspaceConfig.KEY)
+    private workspaceConf: ConfigType<typeof workspaceConfig>,
+    @Inject(frameworkConfig.KEY)
+    private frameworkConf: ConfigType<typeof frameworkConfig>,
+  ) {}
+
   async getAllProjectIds() {
     const rootPath = process.cwd();
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
@@ -25,7 +27,11 @@ export class WorkspaceService {
 
   async getFileTree(projectId: string) {
     const rootPath = process.cwd();
-    const projectPath = path.join(rootPath, this.workspaceConf.rootPath, projectId);
+    const projectPath = path.join(
+      rootPath,
+      this.workspaceConf.rootPath,
+      projectId,
+    );
     return dirTree(projectPath);
   }
 
@@ -34,16 +40,20 @@ export class WorkspaceService {
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
     // Sanitize the workspace name to create a valid directory name
     const projectId = name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
-    
+
     const command = this.frameworkConf[framework];
     if (!command) {
-      throw new Error(`Starter command for framework ${framework} is not defined in .env`);
+      throw new Error(
+        `Starter command for framework ${framework} is not defined in .env`,
+      );
     }
 
-    const { stdout, stderr } = await execAsync(`mkdir -p "${projectPath}/${projectId}" && cd "${projectPath}/${projectId}" && ${command}`);
+    const { stdout, stderr } = await execAsync(
+      `mkdir -p "${projectPath}/${projectId}" && cd "${projectPath}/${projectId}" && ${command}`,
+    );
     if (stderr) console.error(stderr);
     console.log(stdout);
-    
+
     return projectId;
   }
 
@@ -51,11 +61,13 @@ export class WorkspaceService {
     const rootPath = process.cwd();
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
     const projectId = name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
-    
+
     // TODO: To Implement actual git clone logic here.
-    const { stdout, stderr } = await execAsync(`mkdir -p "${projectPath}/${projectId}"`);
+    const { stdout, stderr } = await execAsync(
+      `mkdir -p "${projectPath}/${projectId}"`,
+    );
     if (stderr) console.error(stderr);
-    
+
     return projectId;
   }
 }

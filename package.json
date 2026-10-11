@@ -1,0 +1,20 @@
+{
+  "name": "cloud-ide-workspace",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"server/src/**/*.{ts,js,json}\" \"web/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "format:check": "prettier --check \"server/src/**/*.{ts,js,json}\" \"web/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.2",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css}": [
+      "prettier --write"
+    ]
+  }
+}

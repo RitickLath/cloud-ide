@@ -6,7 +6,7 @@ import { useGetProjectTree } from "@/features/queries/useGetProjectTree"
 import { useParams } from "next/navigation"
 import { useLoadEditorTheme } from "@/hooks/useLoadEditorTheme"
 import ThemeSelector from "@/components/molecule/ThemeSelector"
-import { Files, Settings, X } from "lucide-react"
+import { Files, Settings, X, RefreshCw, FoldVertical } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/atom/dialog"
-import { useSocket } from "@/store/useSocket"
-import { io } from "socket.io-client"
+import { useProjectSocket } from "@/hooks/useProjectSocket"
 
 const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams()
   const projectId = params?.projectId as string
-  const { data, isLoading, isError, isSuccess } = useGetProjectTree(projectId)
+  const { data, isLoading, isError, isSuccess, refetch, isFetching } =
+    useGetProjectTree(projectId)
+  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
+    {}
+  )
+
+  const handleCollapseAll = () => {
+    setExpandedPaths({})
+  }
+
+  // Manage workspace socket connection and event listeners
+  useProjectSocket({
+    projectId,
+    isEnabled: isSuccess && !isError && !!data,
+    onTreeChange: refetch,
+  })
 
   // Sandbox theme values
   const {
@@ -34,35 +48,6 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
   } = useLoadEditorTheme()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const setSocket = useSocket((state) => state.setSocket)
-  const setIsConnected = useSocket((state) => state.setIsConnected)
-
-  useEffect(() => {
-    // Only establish connection if project actually exists and query succeeded
-    if (!projectId || isError || !isSuccess || !data) return
-
-    const socket = io("http://localhost:3002/workspace", {
-      withCredentials: true,
-      transports: ["websocket"],
-    })
-
-    socket.on("connect", () => {
-      setIsConnected(true)
-      socket.emit("join-project", { projectId })
-    })
-
-    socket.on("disconnect", () => {
-      setIsConnected(false)
-    })
-
-    setSocket(socket)
-
-    return () => {
-      socket.disconnect()
-      setSocket(null)
-      setIsConnected(false)
-    }
-  }, [projectId, isSuccess, isError, data, setSocket, setIsConnected])
 
   if (!projectId) return null
 
@@ -118,7 +103,26 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
             className="flex h-10 items-center justify-between border-b border-white/10 px-4 text-xs font-bold tracking-wider uppercase opacity-80 select-none"
             style={{ color: fgColor }}
           >
-            Explorer
+            <span>Explorer</span>
+            <div className="flex items-center gap-0.5 text-gray-400">
+              <button
+                onClick={handleCollapseAll}
+                title="Collapse Folders in Explorer"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <FoldVertical className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                title="Refresh Explorer"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* File Tree Area */}
@@ -129,7 +133,12 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
               </div>
             ) : (
               <div className="h-full w-full">
-                <Node list={data?.data} isVisible={true} />
+                <Node
+                  list={data?.data}
+                  isVisible={true}
+                  expandedPaths={expandedPaths}
+                  setExpandedPaths={setExpandedPaths}
+                />
               </div>
             )}
           </div>

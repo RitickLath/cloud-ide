@@ -79,13 +79,22 @@ const FileTreeNode = ({ item, depth = 0, expandedPaths, togglePath }: any) => {
   )
 }
 
-const Node = ({ list, isVisible }: any) => {
-  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
-    {}
-  )
+const Node = ({
+  list,
+  isVisible,
+  expandedPaths: controlledExpandedPaths,
+  setExpandedPaths: controlledSetExpandedPaths,
+}: any) => {
+  const [internalExpandedPaths, setInternalExpandedPaths] = useState<
+    Record<string, boolean>
+  >({})
+
+  const expandedPaths = controlledExpandedPaths ?? internalExpandedPaths
+  const setExpandedPaths =
+    controlledSetExpandedPaths ?? setInternalExpandedPaths
 
   const togglePath = (path: string) => {
-    setExpandedPaths((prev) => ({
+    setExpandedPaths((prev: Record<string, boolean>) => ({
       ...prev,
       [path]: !prev[path],
     }))

@@ -58,8 +58,21 @@ export class FileService {
   }
 
   async create(payload: FileChangeEvent) {
-    // TODO: Implement file creation on disk
-    return { success: true, message: 'File created' };
+    try {
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, payload.content || '');
+      return { success: true, filePath: payload.filePath };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create file: ${payload.filePath}`,
+        error.stack,
+      );
+      return { success: false, error: error.message };
+    }
   }
 
   async edit(payload: FileChangeEvent) {
@@ -108,14 +121,22 @@ export class FileService {
         payload.filePath,
         payload.projectId,
       );
-      const content = await fs.rename(fullPath, payload.newPath || '');
-      return { success: true, content, filePath: payload.filePath };
+      const fullNewPath = this.resolveFilePath(
+        payload.newPath || '',
+        payload.projectId,
+      );
+      await fs.rename(fullPath, fullNewPath);
+      return {
+        success: true,
+        filePath: payload.filePath,
+        newPath: payload.newPath,
+      };
     } catch (error: any) {
       this.logger.error(
         `Failed to rename file: ${payload.filePath}`,
         error.stack,
       );
-      return { success: false, content: '', error: error.message };
+      return { success: false, error: error.message };
     }
   }
 
@@ -125,14 +146,22 @@ export class FileService {
         payload.filePath,
         payload.projectId,
       );
-      await fs.copyFile(fullPath, payload.newPath || '');
-      return { success: true, filePath: payload.filePath };
+      const fullNewPath = this.resolveFilePath(
+        payload.newPath || '',
+        payload.projectId,
+      );
+      await fs.rename(fullPath, fullNewPath);
+      return {
+        success: true,
+        filePath: payload.filePath,
+        newPath: payload.newPath,
+      };
     } catch (error: any) {
       this.logger.error(
         `Failed to move file: ${payload.filePath}`,
         error.stack,
       );
-      return { success: false, content: '', error: error.message };
+      return { success: false, error: error.message };
     }
   }
 

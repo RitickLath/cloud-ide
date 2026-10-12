@@ -99,9 +99,14 @@ export class WatchmanGateway
   ) {
     const result = await this.watchmanService.handleFileOperation(payload);
 
-    // Only broadcast mutating changes (create, edit, save, delete, rename, move) to peers, not read
-    if (payload.action !== 'read' && payload.projectId) {
-      client.to(payload.projectId).emit('file-change', payload);
+    if (payload.projectId) {
+      if (payload.action === 'edit' || payload.action === 'save') {
+        // Keystroke edits are only sent to peers to prevent echoing to active typist
+        client.to(payload.projectId).emit('file-change', payload);
+      } else if (payload.action !== 'read') {
+        // Structural mutations (create, delete, rename, move) must reach EVERYONE in the project room
+        this.server.to(payload.projectId).emit('file-change', payload);
+      }
     }
 
     return result;
@@ -112,9 +117,13 @@ export class WatchmanGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: FolderChangeEvent,
   ) {
-    await this.watchmanService.handleFolderOperation(payload);
+    const result = await this.watchmanService.handleFolderOperation(payload);
 
-    client.to(payload.projectId).emit('folder-change', payload);
+    if (payload.projectId) {
+      this.server.to(payload.projectId).emit('folder-change', payload);
+    }
+
+    return result;
   }
 
   @SubscribeMessage('get-file-tree')

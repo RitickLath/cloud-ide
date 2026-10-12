@@ -9,17 +9,21 @@ This guide covers the core concepts required to build a real-time, collaborative
 In a maintainable NestJS application, WebSockets are divided into two parts: the **Gateway** (the traffic controller) and the **Service** (the business logic).
 
 ### 1. The Namespace
+
 By default, all socket connections go to the root url (`/`). For large apps, you should segment traffic using Namespaces.
+
 ```typescript
-@WebSocketGateway({ 
+@WebSocketGateway({
   namespace: '/workspace', // Clients connect to ws://localhost:3000/workspace
-  cors: { origin: '*' }    // Allow your frontend to connect
+  cors: { origin: '*' }, // Allow your frontend to connect
 })
 export class WatchmanGateway {}
 ```
 
 ### 2. Dependency Injection
+
 Never put heavy logic (like file writing or DB calls) in the Gateway. Inject a Service to handle it.
+
 ```typescript
 @WebSocketGateway({ namespace: '/workspace' })
 export class WatchmanGateway {
@@ -34,14 +38,14 @@ export class WatchmanGateway {
 
 The most basic WebSocket interaction. A client sends a message, and the server replies directly back to that specific client.
 
-*   **`@SubscribeMessage('event')`**: Listens for a specific action from the client.
-*   **`client.emit()`**: Sends a message straight back to the person who asked.
+- **`@SubscribeMessage('event')`**: Listens for a specific action from the client.
+- **`client.emit()`**: Sends a message straight back to the person who asked.
 
 ```typescript
 @SubscribeMessage('ping')
 handlePing(client: Socket, payload: any) {
   // Replies ONLY to the single client who sent the 'ping'
-  client.emit('pong', "Hello!"); 
+  client.emit('pong', "Hello!");
 }
 ```
 
@@ -51,15 +55,15 @@ handlePing(client: Socket, payload: any) {
 
 In a collaborative app, users are grouped by project. You don't want to broadcast Code for Project A to a user looking at Project B. You solve this with **Rooms**.
 
-*   **The single listener**: You only need one `@SubscribeMessage` to handle thousands of rooms.
-*   **The dynamic room name**: The client passes the room name (e.g., `projectId`) in the payload.
-*   **`client.join(roomName)`**: Socket.IO automatically creates the room in memory if it doesn't exist, and adds the user to it.
+- **The single listener**: You only need one `@SubscribeMessage` to handle thousands of rooms.
+- **The dynamic room name**: The client passes the room name (e.g., `projectId`) in the payload.
+- **`client.join(roomName)`**: Socket.IO automatically creates the room in memory if it doesn't exist, and adds the user to it.
 
 ```typescript
 @SubscribeMessage('join_project')
 joinProject(client: Socket, payload: { projectId: string }) {
   // Dynamically puts the user in a room based on the payload they sent!
-  client.join(payload.projectId); 
+  client.join(payload.projectId);
 }
 ```
 
@@ -69,7 +73,7 @@ joinProject(client: Socket, payload: { projectId: string }) {
 
 When a user types code, you don't need to send that code back to them. You need to send it to their coding partners.
 
-*   **`client.to(roomName).emit()`**: This is the magic multiplayer command. It sends the message to **everyone in the room EXCEPT the sender**.
+- **`client.to(roomName).emit()`**: This is the magic multiplayer command. It sends the message to **everyone in the room EXCEPT the sender**.
 
 ```typescript
 @SubscribeMessage('file_edit')
@@ -90,13 +94,12 @@ Sometimes the server needs to push a message without a client asking first. (e.g
 
 To do this, you cannot rely on the `client` object, because no client triggered the event. You must grab the master Socket.IO server instance.
 
-*   **`@WebSocketServer() server: Server;`**: Gives you global access.
-*   **`this.server.to(roomName).emit()`**: Broadcasts to **everyone** in the room, including the person who made the change (if applicable).
+- **`@WebSocketServer() server: Server;`**: Gives you global access.
+- **`this.server.to(roomName).emit()`**: Broadcasts to **everyone** in the room, including the person who made the change (if applicable).
 
 ```typescript
 @WebSocketGateway()
 export class WatchmanGateway {
-  
   @WebSocketServer()
   server: Server; // The master instance
 
@@ -114,8 +117,8 @@ export class WatchmanGateway {
 
 Instead of using raw `(client: any, payload: any)` arguments, use NestJS decorators for strong typing and cleaner code.
 
-*   **`@ConnectedSocket()`**: Grabs the Socket instance.
-*   **`@MessageBody()`**: Extracts the payload cleanly.
+- **`@ConnectedSocket()`**: Grabs the Socket instance.
+- **`@MessageBody()`**: Extracts the payload cleanly.
 
 ```typescript
 // BAD:
@@ -125,7 +128,7 @@ handleTyping(client: any, payload: any) {}
 // GOOD:
 @SubscribeMessage('typing')
 handleTyping(
-  @ConnectedSocket() client: Socket, 
+  @ConnectedSocket() client: Socket,
   @MessageBody() projectId: string
 ) {
   client.to(projectId).emit('partner_is_typing');

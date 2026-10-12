@@ -63,8 +63,21 @@ export class FileService {
   }
 
   async edit(payload: FileChangeEvent) {
-    // TODO: Implement file edit/buffer updates
-    return { success: true, message: 'File edit recorded' };
+    try {
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
+      const content = await fs.writeFile(fullPath, payload.content || '');
+
+      return { success: true, content, filePath: payload.filePath };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to read file: ${payload.filePath}`,
+        error.stack,
+      );
+      return { success: false, content: '', error: error.message };
+    }
   }
 
   async save(payload: FileChangeEvent) {
@@ -73,18 +86,54 @@ export class FileService {
   }
 
   async delete(payload: FileChangeEvent) {
-    // TODO: Implement file deletion from disk
-    return { success: true, message: 'File deleted' };
+    try {
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
+      await fs.unlink(fullPath);
+      return { success: true, filePath: payload.filePath };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to delete file: ${payload.filePath}`,
+        error.stack,
+      );
+      return { success: false, content: '', error: error.message };
+    }
   }
 
   async rename(payload: FileChangeEvent) {
-    // TODO: Implement file renaming on disk
-    return { success: true, message: 'File renamed' };
+    try {
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
+      const content = await fs.rename(fullPath, payload.newPath || '');
+      return { success: true, content, filePath: payload.filePath };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to rename file: ${payload.filePath}`,
+        error.stack,
+      );
+      return { success: false, content: '', error: error.message };
+    }
   }
 
   async move(payload: FileChangeEvent) {
-    // TODO: Implement moving file to destination path
-    return { success: true, message: 'File moved' };
+    try {
+      const fullPath = this.resolveFilePath(
+        payload.filePath,
+        payload.projectId,
+      );
+      await fs.copyFile(fullPath, payload.newPath || '');
+      return { success: true, filePath: payload.filePath };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to move file: ${payload.filePath}`,
+        error.stack,
+      );
+      return { success: false, content: '', error: error.message };
+    }
   }
 
   async read(payload: FileChangeEvent) {

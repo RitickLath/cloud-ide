@@ -62,9 +62,12 @@ export class WorkspaceService {
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);
     const projectId = name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
 
-    // TODO: To Implement actual git clone logic here.
     const { stdout, stderr } = await execAsync(
       `mkdir -p "${projectPath}/${projectId}"`,
+    );
+
+    await execAsync(
+      `cd "${projectPath}/${projectId}" && git clone ${gitUrl} .`,
     );
     if (stderr) console.error(stderr);
 

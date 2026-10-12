@@ -4,6 +4,7 @@ import { WorkspaceModule } from '../workspace/workspace.module';
 import { WatchmanModule } from '../watchman/watchman.module';
 import { FileModule } from '../file/file.module';
 import { FolderModule } from '../folder/folder.module';
+import { TerminalModule } from '../terminal/terminal.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { FolderModule } from '../folder/folder.module';
     WatchmanModule,
     FileModule,
     FolderModule,
+    TerminalModule,
   ],
 })
 export class DomainModule {}

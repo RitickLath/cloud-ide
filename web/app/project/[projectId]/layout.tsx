@@ -6,7 +6,14 @@ import { useGetProjectTree } from "@/features/queries/useGetProjectTree"
 import { useParams } from "next/navigation"
 import { useLoadEditorTheme } from "@/hooks/useLoadEditorTheme"
 import ThemeSelector from "@/components/molecule/ThemeSelector"
-import { Files, Settings, X, RefreshCw, FoldVertical } from "lucide-react"
+import { Files, Settings, X, MoreHorizontal } from "lucide-react"
+import {
+  NewFileIcon,
+  NewFolderIcon,
+  RefreshIcon,
+  CollapseAllIcon,
+} from "@/components/atom/ExplorerIcons"
+import { ChevronDown, ChevronRight } from "@/components/atom/FileIcon"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +22,8 @@ import {
   DialogTitle,
 } from "@/components/atom/dialog"
 import { useProjectSocket } from "@/hooks/useProjectSocket"
+import useEditorStore from "@/store/useEditorStore"
+import { useSocket } from "@/store/useSocket"
 
 const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams()
@@ -24,9 +33,79 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>(
     {}
   )
+  const [isProjectExpanded, setIsProjectExpanded] = useState(true)
 
   const handleCollapseAll = () => {
     setExpandedPaths({})
+  }
+
+  const getTargetDirectory = () => {
+    const activeExpanded = Object.keys(expandedPaths).filter(
+      (path) => expandedPaths[path]
+    )
+    if (activeExpanded.length > 0) {
+      return activeExpanded[activeExpanded.length - 1]
+    }
+
+    const currentFile = useEditorStore.getState().currentFile
+    if (currentFile?.path) {
+      return currentFile.path.substring(0, currentFile.path.lastIndexOf("/"))
+    }
+
+    // Fallback to workspace root folder
+    return data?.data?.path || ""
+  }
+
+  const handleNewFile = () => {
+    const targetDir = getTargetDirectory()
+    if (!targetDir) return
+
+    const fileName = window.prompt("Enter file name:")
+    if (!fileName?.trim()) return
+
+    const trimmedName = fileName.trim()
+    const filePath = `${targetDir}/${trimmedName}`
+    const extension = trimmedName.split(".").pop() || ""
+    const socket = useSocket.getState().socket
+
+    socket?.emit("file-change", {
+      action: "create",
+      filePath,
+      content: "",
+      projectId,
+    })
+
+    // Immediately open the newly created file in an editor tab
+    useEditorStore.getState().openFile({
+      path: filePath,
+      fileName: trimmedName,
+      extension,
+      content: "",
+    })
+  }
+
+  const handleNewFolder = () => {
+    const targetDir = getTargetDirectory()
+    if (!targetDir) return
+
+    const folderName = window.prompt("Enter folder name:")
+    if (!folderName?.trim()) return
+
+    const folderPath = `${targetDir}/${folderName.trim()}`
+    const socket = useSocket.getState().socket
+
+    socket?.emit("folder-change", {
+      action: "create",
+      folderPath,
+      projectId,
+    })
+
+    // Keep parent and new folder expanded
+    setExpandedPaths((prev) => ({
+      ...prev,
+      [targetDir]: true,
+      [folderPath]: true,
+    }))
   }
 
   // Manage workspace socket connection and event listeners
@@ -100,27 +179,84 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
         >
           {/* Explorer Header */}
           <div
-            className="flex h-10 items-center justify-between border-b border-white/10 px-4 text-xs font-bold tracking-wider uppercase opacity-80 select-none"
+            className="flex h-9 items-center justify-between px-4 text-xs font-semibold select-none"
             style={{ color: fgColor }}
           >
-            <span>Explorer</span>
-            <div className="flex items-center gap-0.5 text-gray-400">
+            <span className="text-[11px] font-bold tracking-wider uppercase opacity-80">
+              Explorer
+            </span>
+            <button
+              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+              title="Views and More Actions..."
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+          </div>
+
+          {/* Collapsible Project Root Section Header */}
+          <div
+            className="group flex h-7 cursor-pointer items-center justify-between px-2 text-xs font-bold tracking-wide transition-colors select-none hover:bg-white/5"
+            onClick={() => setIsProjectExpanded((prev) => !prev)}
+            style={{ color: fgColor }}
+          >
+            <div className="flex min-w-0 items-center gap-1">
+              <div className="flex h-4 w-4 items-center justify-center text-gray-400">
+                {isProjectExpanded ? <ChevronDown /> : <ChevronRight />}
+              </div>
+              <span className="truncate text-xs font-bold">
+                {data?.data?.name || projectId || "Workspace"}
+              </span>
+            </div>
+
+            <div
+              className="flex items-center gap-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
-                onClick={handleCollapseAll}
-                title="Collapse Folders in Explorer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsProjectExpanded(true)
+                  handleNewFile()
+                }}
+                title="New File..."
                 className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white"
               >
-                <FoldVertical className="h-3.5 w-3.5" />
+                <NewFileIcon size={16} />
               </button>
               <button
-                onClick={() => refetch()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsProjectExpanded(true)
+                  handleNewFolder()
+                }}
+                title="New Folder..."
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <NewFolderIcon size={16} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  refetch()
+                }}
                 disabled={isFetching}
                 title="Refresh Explorer"
                 className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
               >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+                <RefreshIcon
+                  size={16}
+                  className={isFetching ? "animate-spin" : ""}
                 />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCollapseAll()
+                }}
+                title="Collapse Folders in Explorer"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <CollapseAllIcon size={16} />
               </button>
             </div>
           </div>
@@ -131,7 +267,7 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
               <div className="absolute inset-0 flex animate-pulse items-center justify-center text-xs opacity-50">
                 Loading workspace...
               </div>
-            ) : (
+            ) : isProjectExpanded ? (
               <div className="h-full w-full">
                 <Node
                   list={data?.data}
@@ -140,7 +276,7 @@ const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
                   setExpandedPaths={setExpandedPaths}
                 />
               </div>
-            )}
+            ) : null}
           </div>
         </aside>
       )}

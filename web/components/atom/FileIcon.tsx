@@ -322,3 +322,10 @@ export const FileIcon = ({
 
   return <DefaultFileIcon />
 }
+
+export {
+  NewFileIcon,
+  NewFolderIcon,
+  RefreshIcon,
+  CollapseAllIcon,
+} from "./ExplorerIcons"

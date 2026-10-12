@@ -16,24 +16,31 @@ const registerWorkspaceEvents = (socket: Socket, onTreeChange?: () => void) => {
   socket.on("file-change", (payload: any) => {
     if (payload.action === "edit" || payload.action === "save") {
       if (payload.content !== undefined) {
-        if (useEditorStore.getState().openFile === payload.filePath) {
-          console.log("File is open")
-          useEditorStore
-            .getState()
-            .updateFileContent(payload.filePath, payload.content)
-          useEditorStore.getState().markFileSaved(payload.filePath)
+        const store = useEditorStore.getState()
+        const isOpen = store.openFiles.some(
+          (file) => file.path === payload.filePath
+        )
+
+        if (isOpen) {
+          store.updateFileContent(payload.filePath, payload.content)
+          store.markFileSaved(payload.filePath)
         }
       }
     } else if (payload.action === "delete") {
       useEditorStore.getState().closeFile(payload.filePath)
       onTreeChange?.()
-    } else if (
-      payload.action === "create" ||
-      payload.action === "rename" ||
-      payload.action === "move"
-    ) {
+    } else if (payload.action === "rename") {
+      if (payload.newPath) {
+        useEditorStore.getState().renameFile(payload.filePath, payload.newPath)
+      }
+      onTreeChange?.()
+    } else if (payload.action === "create" || payload.action === "move") {
       onTreeChange?.()
     }
+  })
+
+  socket.on("folder-change", () => {
+    onTreeChange?.()
   })
 }
 

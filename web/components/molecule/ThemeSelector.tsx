@@ -33,7 +33,7 @@ export const ThemeSelector = ({ iconOnly = false }: { iconOnly?: boolean }) => {
       }}
     >
       <SelectTrigger
-        size={iconOnly ? "icon" : "sm"}
+        size="sm"
         className={
           iconOnly
             ? "flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent shadow-none hover:bg-white/10 focus:ring-0 [&>svg:last-child]:hidden"

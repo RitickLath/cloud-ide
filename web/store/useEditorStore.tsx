@@ -23,6 +23,7 @@ interface ActiveTabsState {
   switchFile: (path: string) => void
   updateFileContent: (path: string, content: string) => void
   markFileSaved: (path: string) => void
+  renameFile: (oldPath: string, newPath: string) => void
   closeAllFiles: () => void
 }
 
@@ -102,6 +103,32 @@ const useEditorStore = create<ActiveTabsState>((set) => ({
       currentFile:
         state.currentFile?.path === path
           ? { ...state.currentFile, isEdited: false }
+          : state.currentFile,
+    }))
+  },
+
+  renameFile: (oldPath, newPath) => {
+    const newFileName = newPath.split("/").pop() || ""
+    const newExtension = newFileName.split(".").pop() || ""
+    set((state) => ({
+      openFiles: state.openFiles.map((file) =>
+        file.path === oldPath
+          ? {
+              ...file,
+              path: newPath,
+              fileName: newFileName,
+              extension: newExtension,
+            }
+          : file
+      ),
+      currentFile:
+        state.currentFile?.path === oldPath
+          ? {
+              ...state.currentFile,
+              path: newPath,
+              fileName: newFileName,
+              extension: newExtension,
+            }
           : state.currentFile,
     }))
   },

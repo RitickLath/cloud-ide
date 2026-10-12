@@ -7,9 +7,21 @@ interface EditorThemeState {
   setThemeData: (data: any) => void
 }
 
+const getDefaultTheme = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("theme") || "GitHub Dark"
+  }
+  return "GitHub Dark"
+}
+
 export const useEditorTheme = create<EditorThemeState>()((set) => ({
-  theme: "IDLE",
+  theme: getDefaultTheme(),
   themeData: null,
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", theme)
+    }
+    set({ theme })
+  },
   setThemeData: (data) => set({ themeData: data }),
 }))

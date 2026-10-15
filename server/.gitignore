@@ -3,3 +3,7 @@ node_modules
 .env.local
 dist
 project-instances/
+/generated/prisma
+.agents/skills
+.claude/skills
+.windsurf/skills

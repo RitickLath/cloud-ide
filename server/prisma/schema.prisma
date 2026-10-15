@@ -97,6 +97,7 @@ model User {
   username     String   @unique @db.VarChar(50)
   email        String   @unique @db.VarChar(255)
   passwordHash String
+  isVerified   Boolean
   createdAt    DateTime @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 

@@ -27,6 +27,9 @@
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
   "tailwindcss.lint.invalidVariant": "ignore",
   "tailwindcss.lint.cssConflict": "ignore",
   "tailwindcss.lint.recommendedVariantOrder": "ignore",

@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,13 +7,514 @@ datasource db {
   provider = "postgresql"
 }
 
+// =========================================
+// 1. ENUMS
+// =========================================
+
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ReactionStatus {
+  LIKE
+  DISLIKE
+}
+
+enum SubmissionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum SubmissionVerdict {
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+  INTERNAL_ERROR
+}
+
+enum TestcaseStatus {
+  PENDING
+  RUNNING
+  PASSED
+  FAILED
+  SKIPPED
+  ERROR
+}
+
+enum WorkspaceVisibility {
+  PRIVATE
+  PUBLIC
+  UNLISTED
+}
+
+enum WorkspaceStatus {
+  CREATING
+  READY
+  ARCHIVED
+  ERROR
+}
+
+enum SnapshotTrigger {
+  MANUAL
+  AUTO
+  SHUTDOWN
+}
+
+enum WorkspaceRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum SessionStatus {
+  STARTING
+  ACTIVE
+  DISCONNECTED
+  TERMINATED
+}
+
+// =========================================
+// 2. USERS, ROLES AND PROFILES
+// =========================================
+
+model Role {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String @unique @db.VarChar(50)
+  users User[]
+}
+
 model User {
-  id String @id @default(uuid())
-  username String @unique
-  name String
-  email String @unique
-  image String? 
-  role String @default("USER")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @db.Uuid
+  username     String   @unique @db.VarChar(50)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  role                 Role                 @relation(fields: [roleId], references: [id])
+  profile              Profile?
+  createdProblems      Problem[]            @relation("CreatedProblems")
+  submissions          Submission[]
+  solvedProblems       UserSolvedProblem[]
+  discussions          Discussion[]
+  problemReactions     ProblemReaction[]
+  discussionReactions  DiscussionReaction[]
+  problemLists         ProblemList[]
+  ownedWorkspaces      Workspace[]
+  workspaceMemberships WorkspaceMember[]
+  workspaceSessions    WorkspaceSession[]
+}
+
+model Profile {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @unique @db.Uuid
+  name        String? @db.VarChar(100)
+  bio         String?
+  avatarUrl   String?
+  gender      String? @db.VarChar(30)
+  phoneNumber String? @db.VarChar(30)
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links ProfileLink[]
+}
+
+model ProfileLink {
+  id        String  @id @default(uuid()) @db.Uuid
+  profileId String  @db.Uuid
+  platform  String  @db.VarChar(30)
+  url       String
+  isPublic  Boolean @default(true)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, platform])
+}
+
+// =========================================
+// 3. PROBLEMS AND CONFIGURATION
+// =========================================
+
+model Problem {
+  id          String            @id @default(uuid()) @db.Uuid
+  creatorId   String?           @db.Uuid
+  title       String            @db.VarChar(255)
+  description String
+  difficulty  ProblemDifficulty @default(EASY)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  creator         User?               @relation("CreatedProblems", fields: [creatorId], references: [id], onDelete: SetNull)
+  config          ProblemConfig?
+  hints           Hint[]
+  testcases       Testcase[]
+  topics          ProblemTopic[]
+  companies       CompanyProblem[]
+  similarProblems SimilarProblem[]    @relation("ProblemSimilar")
+  similarTo       SimilarProblem[]    @relation("RelatedSimilar")
+  submissions     Submission[]
+  solvedUsers     UserSolvedProblem[]
+  discussions     Discussion[]
+  reactions       ProblemReaction[]
+  listItems       ProblemListItem[]
+
+  @@index([difficulty])
+}
+
+model ProblemConfig {
+  problemId               String  @id @db.Uuid
+  timeLimitMs             Int     @default(1000)
+  memoryLimitMb           Int     @default(256)
+  expectedTimeComplexity  String? @db.VarChar(100)
+  expectedSpaceComplexity String? @db.VarChar(100)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+// =========================================
+// 4. HINTS AND TEST CASES
+// =========================================
+
+model Hint {
+  id        String @id @default(uuid()) @db.Uuid
+  problemId String @db.Uuid
+  position  Int    @db.SmallInt
+  content   String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, position])
+  @@index([problemId])
+}
+
+model Testcase {
+  id                String  @id @default(uuid()) @db.Uuid
+  problemId         String  @db.Uuid
+  inputData         String
+  expectedOutput    String
+  inputExplanation  String?
+  outputExplanation String?
+  inputImageUrl     String?
+  outputImageUrl    String?
+  isSample          Boolean @default(false)
+  position          Int     @db.SmallInt
+
+  problem           Problem                    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submissionResults SubmissionTestcaseResult[]
+
+  @@unique([problemId, position])
+  @@index([problemId])
+}
+
+// =========================================
+// 5. TOPICS
+// =========================================
+
+model Topic {
+  id       String         @id @default(uuid()) @db.Uuid
+  name     String         @unique @db.VarChar(100)
+  problems ProblemTopic[]
+}
+
+model ProblemTopic {
+  problemId String @db.Uuid
+  topicId   String @db.Uuid
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, topicId])
+  @@index([topicId])
+}
+
+// =========================================
+// 6. COMPANIES
+// =========================================
+
+model Company {
+  id       String           @id @default(uuid()) @db.Uuid
+  name     String           @unique @db.VarChar(255)
+  problems CompanyProblem[]
+}
+
+model CompanyProblem {
+  problemId      String    @db.Uuid
+  companyId      String    @db.Uuid
+  lastReportedAt DateTime? @db.Date
+  frequency      Int?      @db.SmallInt
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, companyId])
+  @@index([companyId])
+}
+
+// =========================================
+// 7. SIMILAR PROBLEMS
+// =========================================
+
+model SimilarProblem {
+  problemId        String @db.Uuid
+  similarProblemId String @db.Uuid
+
+  problem        Problem @relation("ProblemSimilar", fields: [problemId], references: [id], onDelete: Cascade)
+  similarProblem Problem @relation("RelatedSimilar", fields: [similarProblemId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, similarProblemId])
+  @@index([similarProblemId])
+}
+
+// =========================================
+// 8. SUBMISSIONS
+// =========================================
+
+model Submission {
+  id           String             @id @default(uuid()) @db.Uuid
+  userId       String             @db.Uuid
+  problemId    String             @db.Uuid
+  language     String             @db.VarChar(30)
+  sourceCode   String
+  status       SubmissionStatus   @default(PENDING)
+  verdict      SubmissionVerdict?
+  runtimeMs    Int?
+  memoryKb     Int?
+  errorMessage String?
+  jobId        String?            @db.VarChar(255)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(6)
+  completedAt  DateTime?          @db.Timestamptz(6)
+
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem         Problem                    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  testcaseResults SubmissionTestcaseResult[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([problemId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([jobId])
+}
+
+// =========================================
+// 9. PER-TEST-CASE SUBMISSION RESULTS
+// =========================================
+
+model SubmissionTestcaseResult {
+  id           String         @id @default(uuid()) @db.Uuid
+  submissionId String         @db.Uuid
+  testcaseId   String         @db.Uuid
+  status       TestcaseStatus @default(PENDING)
+  runtimeMs    Int?
+  memoryKb     Int?
+  errorMessage String?
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testcase   Testcase   @relation(fields: [testcaseId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, testcaseId])
+  @@index([submissionId])
+}
+
+// =========================================
+// 10. DISCUSSIONS AND REPLIES
+// =========================================
+
+model Discussion {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @db.Uuid
+  problemId          String   @db.Uuid
+  parentDiscussionId String?  @db.Uuid
+  content            String
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem          Problem              @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  parentDiscussion Discussion?          @relation("DiscussionReplies", fields: [parentDiscussionId], references: [id], onDelete: Cascade)
+  replies          Discussion[]         @relation("DiscussionReplies")
+  reactions        DiscussionReaction[]
+
+  @@index([problemId, createdAt(sort: Desc)])
+  @@index([parentDiscussionId])
+}
+
+// =========================================
+// 11. REACTIONS
+// =========================================
+
+model ProblemReaction {
+  userId    String         @db.Uuid
+  problemId String         @db.Uuid
+  status    ReactionStatus
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+}
+
+model DiscussionReaction {
+  userId       String         @db.Uuid
+  discussionId String         @db.Uuid
+  status       ReactionStatus
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, discussionId])
+  @@index([discussionId])
+}
+
+// =========================================
+// 12. USER SOLVED PROBLEMS (STATS / CACHE)
+// =========================================
+
+model UserSolvedProblem {
+  userId        String            @db.Uuid
+  problemId     String            @db.Uuid
+  difficulty    ProblemDifficulty
+  firstSolvedAt DateTime          @default(now()) @db.Timestamptz(6)
+  lastSolvedAt  DateTime          @default(now()) @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+  @@index([userId, difficulty])
+  @@index([userId, lastSolvedAt(sort: Desc)])
+}
+
+// =========================================
+// 13. CLOUD IDE WORKSPACES & S3 BACKUP
+// =========================================
+
+model Workspace {
+  id          String              @id @default(uuid()) @db.Uuid
+  ownerId     String              @db.Uuid
+  name        String              @db.VarChar(100)
+  slug        String              @db.VarChar(100)
+  description String?
+  framework   String              @db.VarChar(50)
+  gitUrl      String?
+  visibility  WorkspaceVisibility @default(PRIVATE)
+  status      WorkspaceStatus     @default(CREATING)
+
+  // S3 backup and persistence tracking
+  s3Bucket     String @db.VarChar(100)
+  s3Prefix     String @db.VarChar(255)
+  storageBytes BigInt @default(0)
+
+  lastAccessedAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  owner     User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   WorkspaceMember[]
+  snapshots WorkspaceSnapshot[]
+  envVars   WorkspaceEnvVar[]
+  sessions  WorkspaceSession[]
+
+  @@unique([ownerId, slug])
+  @@index([ownerId])
+  @@index([status])
+}
+
+model WorkspaceSnapshot {
+  id          String          @id @default(uuid()) @db.Uuid
+  workspaceId String          @db.Uuid
+  title       String?         @db.VarChar(100)
+  description String?
+  s3Key       String          @db.VarChar(500)
+  sizeBytes   BigInt          @default(0)
+  trigger     SnapshotTrigger @default(AUTO)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @db.Uuid
+  userId      String        @db.Uuid
+  role        WorkspaceRole @default(EDITOR)
+  joinedAt    DateTime      @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceEnvVar {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  key         String   @db.VarChar(255)
+  value       String
+  isSecret    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+}
+
+model WorkspaceSession {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @db.Uuid
+  userId      String        @db.Uuid
+  nodeOrHost  String?       @db.VarChar(100)
+  status      SessionStatus @default(STARTING)
+  startedAt   DateTime      @default(now()) @db.Timestamptz(6)
+  endedAt     DateTime?     @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+}
+
+// =========================================
+// 14. PROBLEM LISTS / SHEETS
+// =========================================
+
+model ProblemList {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ProblemListItem[]
+
+  @@unique([userId, name])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model ProblemListItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  listId    String   @db.Uuid
+  problemId String   @db.Uuid
+  order     Int?
+  notes     String?
+  addedAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  list    ProblemList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  problem Problem     @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, problemId])
+  @@index([listId, addedAt(sort: Desc)])
+  @@index([problemId])
 }

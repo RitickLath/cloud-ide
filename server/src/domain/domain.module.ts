@@ -5,6 +5,8 @@ import { WatchmanModule } from '../watchman/watchman.module';
 import { FileModule } from '../file/file.module';
 import { FolderModule } from '../folder/folder.module';
 import { TerminalModule } from '../terminal/terminal.module';
+import { AuthModule } from 'src/auth/auth.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { TerminalModule } from '../terminal/terminal.module';
     FileModule,
     FolderModule,
     TerminalModule,
+    AuthModule,
+    UserModule,
   ],
 })
 export class DomainModule {}

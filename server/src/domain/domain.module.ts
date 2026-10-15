@@ -7,6 +7,7 @@ import { FolderModule } from '../folder/folder.module';
 import { TerminalModule } from '../terminal/terminal.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from 'src/user/user.module';
     TerminalModule,
     AuthModule,
     UserModule,
+    MailModule,
   ],
 })
 export class DomainModule {}

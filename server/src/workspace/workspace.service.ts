@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { execAsync } from '../common/utils/exec.util';
 import { Framework } from '../common/types/project.types';
 import workspaceConfig from '../config/workspace.config';

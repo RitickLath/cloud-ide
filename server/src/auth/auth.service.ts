@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { RegisterAuthDto } from './auth.dto';
@@ -12,17 +13,49 @@ import { UserRole } from 'src/common/types/roles.enum';
 import { MailService } from 'src/mail/mail.service';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
+import { BloomFilter } from 'src/common/utils/bloom';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     @Inject('REDIS_CLIENT') private redis: Redis,
     private mailService: MailService,
+    private bloom: BloomFilter,
   ) {}
 
-  // bloom filter based implementation
-  async checkUsernameAvailability(username: string) {}
+  // Warm up BloomFilter on application boot (Startup Bottleneck)
+  async onModuleInit() {
+    const users = await this.prisma.user.findMany({
+      select: { username: true },
+    });
+    for (const u of users) {
+      this.bloom.add(u.username);
+    }
+  }
+
+  // bloom filter based implementation with zero false negatives
+  async checkUsernameAvailability(username: string) {
+    if (!username) {
+      throw new BadRequestException('Username is required');
+    }
+
+    const normalizedUsername = username.trim().toLowerCase();
+
+    // 1. Fast Bloom Filter check:
+    const mightBeTaken = this.bloom.has(normalizedUsername);
+    if (!mightBeTaken) {
+      return { isAvailable: true };
+    }
+
+    // 2. Candidate false-positive check: verify in database
+    const user = await this.prisma.user.findUnique({
+      where: { username: normalizedUsername },
+      select: { id: true },
+    });
+
+    return { isAvailable: !user };
+  }
 
   async verifyEmail(token: string, email: string) {
     if (!token || !email) {
@@ -122,7 +155,10 @@ export class AuthService {
       },
     });
 
-    // 5. Generate verification token and send email
+    // 5. Reserve username in BloomFilter immediately
+    this.bloom.add(user.username);
+
+    // 6. Generate verification token and send email
     const verificationToken = crypto.randomUUID();
     await this.redis.set(
       `verify:${user.email}`,

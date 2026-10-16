@@ -14,6 +14,7 @@ import { MailService } from 'src/mail/mail.service';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
 import { BloomFilter } from 'src/common/utils/bloom';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -22,6 +23,7 @@ export class AuthService implements OnModuleInit {
     @Inject('REDIS_CLIENT') private redis: Redis,
     private mailService: MailService,
     private bloom: BloomFilter,
+    private configService: ConfigService,
   ) {}
 
   // Warm up BloomFilter on application boot (Startup Bottleneck)
@@ -131,6 +133,8 @@ export class AuthService implements OnModuleInit {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(body.password, saltRounds);
 
+    const isDev = this.configService.get('NODE_ENV') === 'development';
+
     // 4. Create User in database
     const user = await this.prisma.user.create({
       data: {
@@ -140,7 +144,7 @@ export class AuthService implements OnModuleInit {
         role: {
           connect: { name: targetRole },
         },
-        isVerified: false,
+        isVerified: isDev,
       },
       select: {
         id: true,
@@ -159,23 +163,24 @@ export class AuthService implements OnModuleInit {
     this.bloom.add(user.username);
 
     // 6. Generate verification token and send email
-    const verificationToken = crypto.randomUUID();
-    await this.redis.set(
-      `verify:${user.email}`,
-      verificationToken,
-      'EX',
-      60 * 60 * 24,
-    );
-
-    // 6. Queue verification email
-    await this.mailService.queueVerificationEmail(
-      user.email,
-      verificationToken,
-      user.username,
-    );
-
+    if (!isDev) {
+      const verificationToken = crypto.randomUUID();
+      await this.redis.set(
+        `verify:${user.email}`,
+        verificationToken,
+        'EX',
+        60 * 60 * 24,
+      );
+      await this.mailService.queueVerificationEmail(
+        user.email,
+        verificationToken,
+        user.username,
+      );
+    }
     return {
-      message: 'User registered successfully. Please verify your email.',
+      message: isDev
+        ? 'User registered successfully (Auto-verified in dev).'
+        : 'User registered successfully. Please verify your email.',
       user,
     };
   }

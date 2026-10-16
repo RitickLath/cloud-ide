@@ -41,14 +41,39 @@ import { Loader2 } from "lucide-react"
 import { useCreateProject } from "@/features/mutations/useCreateProject"
 import { useRouter } from "next/navigation"
 
-export const CreateWorkspaceModal = () => {
+import { useEffect } from "react"
+
+interface CreateWorkspaceModalProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  initialView?: "template" | "git"
+  initialFramework?: string
+}
+
+export const CreateWorkspaceModal = ({
+  open = true,
+  onOpenChange,
+  initialView = "template",
+  initialFramework = "NEXTJS",
+}: CreateWorkspaceModalProps) => {
   const router = useRouter()
-  const [view, setView] = useState<"template" | "git">("template")
-  const [selectedFramework, setSelectedFramework] = useState<string>("NEXTJS")
+  const [view, setView] = useState<"template" | "git">(initialView)
+  const [selectedFramework, setSelectedFramework] =
+    useState<string>(initialFramework)
   const [activeTab, setActiveTab] = useState<string>("All")
   const [search, setSearch] = useState("")
   const [workspaceName, setWorkspaceName] = useState("")
   const [gitUrl, setGitUrl] = useState("")
+
+  // Synchronize state when modal is opened with new props
+  useEffect(() => {
+    if (open) {
+      setView(initialView)
+      if (initialFramework) {
+        setSelectedFramework(initialFramework)
+      }
+    }
+  }, [open, initialView, initialFramework])
 
   const { createWithTemplate, createWithGit } = useCreateProject()
   const isPending = createWithTemplate.isPending || createWithGit.isPending
@@ -88,7 +113,7 @@ export const CreateWorkspaceModal = () => {
   })
 
   return (
-    <Dialog open={true}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full gap-0 overflow-hidden border-border bg-background p-0 shadow-2xl sm:max-w-[800px]">
         <div className="border-b border-border p-6 pb-4">
           <DialogHeader className="mb-4">

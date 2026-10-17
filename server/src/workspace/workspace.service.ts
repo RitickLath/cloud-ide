@@ -34,6 +34,22 @@ export class WorkspaceService {
     return dirTree(projectPath);
   }
 
+  async calculateWorkspaceSize(projectId: string): Promise<bigint> {
+    const rootPath = process.cwd();
+    const projectPath = path.join(
+      rootPath,
+      this.workspaceConf.rootPath,
+      projectId,
+    );
+
+    // directory-tree supports an `exclude` regex parameter to ignore node_modules, .git, and venv
+    const tree = dirTree(projectPath, {
+      exclude: /(node_modules|\.git|venv|\.next|dist|build)/,
+    });
+
+    return BigInt(tree?.size || 0);
+  }
+
   async createProject(framework: Framework, name: string) {
     const rootPath = process.cwd();
     const projectPath = path.join(rootPath, this.workspaceConf.rootPath);

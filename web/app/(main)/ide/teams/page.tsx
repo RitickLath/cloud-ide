@@ -155,7 +155,7 @@ export default function IdeTeamsPage() {
                         </div>
                         <div>
                           <Link
-                            href={`/project/${row.project.id}`}
+                            href={`/ide/project/${row.project.id}`}
                             className="font-medium text-foreground hover:text-primary hover:underline"
                           >
                             {row.project.name}
@@ -206,7 +206,7 @@ export default function IdeTeamsPage() {
                     {/* Action */}
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/project/${row.project.id}`}
+                        href={`/ide/project/${row.project.id}`}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-primary transition hover:underline"
                       >
                         <span>Workspace</span>

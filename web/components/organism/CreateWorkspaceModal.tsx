@@ -97,7 +97,7 @@ export const CreateWorkspaceModal = ({
 
       if (createdProjectId) {
         console.log("Hit", createdProjectId)
-        router.push(`/project/${createdProjectId}`)
+        router.push(`/ide/project/${createdProjectId}`)
       }
     } catch (error) {
       console.error("Failed to create workspace:", error)

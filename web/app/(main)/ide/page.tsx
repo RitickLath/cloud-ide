@@ -11,18 +11,21 @@ import {
   ExternalLink,
   GitBranch,
   Plus,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/atom/button"
-import { MOCK_PROJECTS } from "@/constants/mock-data"
 import { CreateWorkspaceModal } from "@/components/organism/CreateWorkspaceModal"
+import { useGetAllProjects } from "@/features/queries/useGetAllProjects"
 
 export default function IdeDashboardPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalView, setModalView] = useState<"template" | "git">("template")
 
-  const runningProjects = MOCK_PROJECTS.filter((p) => p.status === "Running")
+  const { data: projects = [], isLoading } = useGetAllProjects()
+
+  const runningProjects = projects.filter((p) => p.status === "READY")
   const totalCollaborators = new Set(
-    MOCK_PROJECTS.flatMap((p) => p.collaborators.map((c) => c.email))
+    projects.flatMap((p) => p.members?.map((m) => m.user.email) || [])
   ).size
 
   const handleOpenModal = (view: "template" | "git" = "template") => {
@@ -76,12 +79,12 @@ export default function IdeDashboardPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold tracking-tight text-foreground">
-              {MOCK_PROJECTS.length}
+              {projects.length}
             </span>
             <span className="text-xs text-muted-foreground">workspaces</span>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Across 5 framework templates
+            Connected cloud workspaces
           </p>
         </div>
 
@@ -94,7 +97,7 @@ export default function IdeDashboardPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold tracking-tight text-foreground">
-              {runningProjects.length} / {MOCK_PROJECTS.length}
+              {runningProjects.length} / {projects.length || 0}
             </span>
             <span className="text-xs text-emerald-400">active</span>
           </div>
@@ -102,7 +105,7 @@ export default function IdeDashboardPage() {
             <div
               className="h-full rounded-full bg-emerald-500"
               style={{
-                width: `${(runningProjects.length / MOCK_PROJECTS.length) * 100}%`,
+                width: `${projects.length > 0 ? (runningProjects.length / projects.length) * 100 : 0}%`,
               }}
             />
           </div>
@@ -160,56 +163,89 @@ export default function IdeDashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {runningProjects.map((project) => (
-            <div
-              key={project.id}
-              className="flex flex-col justify-between rounded-xl border border-border/50 bg-card/30 p-5 transition hover:border-primary/40 hover:bg-card/50"
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex h-36 items-center justify-center rounded-xl border border-border/40 bg-card/20">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Empty */}
+        {!isLoading && projects.length === 0 && (
+          <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-card/10 text-center">
+            <p className="text-xs text-muted-foreground">
+              No active workspaces yet.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => handleOpenModal("template")}
+              className="mt-1 h-7 text-xs font-semibold"
             >
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-bold ${project.iconBg}`}
-                    >
-                      {project.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <Link
-                        href={`/project/${project.id}`}
-                        className="line-clamp-1 text-sm font-semibold text-foreground hover:text-primary"
-                      >
-                        {project.name}
-                      </Link>
-                      <p className="text-[11px] text-muted-foreground">
-                        {project.framework}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Running
-                  </span>
-                </div>
+              <Plus className="mr-1 h-3 w-3" />
+              Create your first project
+            </Button>
+          </div>
+        )}
 
-                <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">
-                  {project.description}
-                </p>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between border-t border-border/40 pt-3 text-[11px] text-muted-foreground">
-                <span>{project.branch}</span>
-                <Link
-                  href={`/project/${project.id}`}
-                  className="flex items-center gap-1 font-medium text-primary hover:underline"
+        {/* Grid */}
+        {!isLoading && projects.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.slice(0, 6).map((project) => {
+              const projectSlug = project.slug || project.id
+              return (
+                <div
+                  key={project.id}
+                  className="flex flex-col justify-between rounded-xl border border-border/50 bg-card/30 p-5 transition hover:border-primary/40 hover:bg-card/50"
                 >
-                  <span>Open IDE</span>
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-sm font-bold text-primary">
+                          {project.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <Link
+                            href={`/ide/project/${projectSlug}`}
+                            className="line-clamp-1 text-sm font-semibold text-foreground hover:text-primary"
+                          >
+                            {project.name}
+                          </Link>
+                          <p className="text-[11px] text-muted-foreground">
+                            {project.framework}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        Ready
+                      </span>
+                    </div>
+
+                    <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">
+                      {project.description ||
+                        (project.gitUrl
+                          ? `Imported from ${project.gitUrl}`
+                          : `${project.framework} cloud workspace`)}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-border/40 pt-3 text-[11px] text-muted-foreground">
+                    <span>
+                      {new Date(project.createdAt).toLocaleDateString()}
+                    </span>
+                    <Link
+                      href={`/ide/project/${projectSlug}`}
+                      className="flex items-center gap-1 font-medium text-primary hover:underline"
+                    >
+                      <span>Open IDE</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <CreateWorkspaceModal

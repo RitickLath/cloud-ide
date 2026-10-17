@@ -2,11 +2,24 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import cookieParser from 'cookie-parser';
+
+// Allow BigInt (e.g. from Prisma storageBytes) to be serialized in JSON.stringify
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this) <= Number.MAX_SAFE_INTEGER
+    ? Number(this)
+    : this.toString();
+};
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  app.use(cookieParser());
+
+  app.enableCors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true,
+  });
 
   app
     .setGlobalPrefix('api')

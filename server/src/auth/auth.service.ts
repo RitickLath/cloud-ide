@@ -4,10 +4,11 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
   OnModuleInit,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { RegisterAuthDto } from './auth.dto';
+import { LoginAuthDto, RegisterAuthDto } from './auth.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserRole } from 'src/common/types/roles.enum';
 import { MailService } from 'src/mail/mail.service';
@@ -15,6 +16,7 @@ import Redis from 'ioredis';
 import * as crypto from 'crypto';
 import { BloomFilter } from 'src/common/utils/bloom';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -24,10 +26,20 @@ export class AuthService implements OnModuleInit {
     private mailService: MailService,
     private bloom: BloomFilter,
     private configService: ConfigService,
+    private jwtService: JwtService,
   ) {}
 
-  // Warm up BloomFilter on application boot (Startup Bottleneck)
+  // Warm up BloomFilter & seed roles on application boot
   async onModuleInit() {
+    // Seed default roles if they don't exist
+    for (const role of Object.values(UserRole)) {
+      await this.prisma.role.upsert({
+        where: { name: role },
+        update: {},
+        create: { name: role },
+      });
+    }
+
     const users = await this.prisma.user.findMany({
       select: { username: true },
     });
@@ -142,7 +154,10 @@ export class AuthService implements OnModuleInit {
         email: body.email,
         passwordHash,
         role: {
-          connect: { name: targetRole },
+          connectOrCreate: {
+            where: { name: targetRole },
+            create: { name: targetRole },
+          },
         },
         isVerified: isDev,
       },
@@ -185,9 +200,87 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  async login(body: RegisterAuthDto) {}
+  async login(body: LoginAuthDto) {
+    const identifier = body.username.trim().toLowerCase();
 
-  async logout() {}
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ username: identifier }, { email: identifier }],
+      },
+      include: {
+        role: true,
+      },
+    });
 
-  async me() {}
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      body.password,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
+    }
+
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role?.name,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role?.name,
+      },
+    };
+  }
+
+  async logout() {
+    return {
+      message: 'Logged out successfully',
+    };
+  }
+
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        isVerified: true,
+        createdAt: true,
+        role: {
+          select: {
+            name: true,
+          },
+        },
+        profile: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      ...user,
+      role: user.role?.name,
+    };
+  }
 }

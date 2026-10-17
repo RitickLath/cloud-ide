@@ -1,5 +1,3 @@
-// proxy.ts
-
 import { NextRequest, NextResponse } from "next/server"
 
 export function proxy(request: NextRequest) {
@@ -13,5 +11,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*"],
+  matcher: ["/dashboard/:path*", "/settings/:path*", "/ide/:path*"],
 }

@@ -14,13 +14,18 @@ export interface LoginDto {
 
 export const AuthService = {
   checkUsername: async (username: string) => {
-    const res = await axiosInstance.get<{ isAvailable: boolean }>(
-      "/auth/check-username",
-      {
-        params: { username },
-      }
-    )
-    return res.data
+    const res = await axiosInstance.get("/auth/check-username", {
+      params: { username },
+    })
+
+    const payload: any = res.data
+    return { isAvailable: Boolean(payload?.data?.isAvailable) }
+  },
+
+  getMe: async () => {
+    const res = await axiosInstance.get("/auth/me")
+    const payload: any = res.data
+    return payload?.data || payload
   },
 
   register: async (data: RegisterDto) => {
@@ -37,6 +42,11 @@ export const AuthService = {
     const res = await axiosInstance.get("/auth/verify-email", {
       params: { token, email },
     })
+    return res.data
+  },
+
+  logout: async () => {
+    const res = await axiosInstance.post("/auth/logout")
     return res.data
   },
 }

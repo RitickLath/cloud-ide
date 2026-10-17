@@ -29,7 +29,7 @@ export default function LoginPage() {
         username: username.trim().toLowerCase(),
         password,
       })
-      router.push("/problems")
+      router.push("/")
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||

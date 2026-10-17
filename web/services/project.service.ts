@@ -37,4 +37,48 @@ export const ProjectService = {
     const response = await axiosInstance.get(`/project/${projectId}/tree`)
     return response.data
   },
+
+  /**
+   * Gets all projects/workspaces for the authenticated user.
+   */
+  getAllProjects: async () => {
+    const response = await axiosInstance.get("/project")
+    const payload: any = response.data
+    return payload?.data || payload
+  },
+
+  /**
+   * Invites a user/collaborator to the project.
+   */
+  inviteMember: async (
+    projectId: string,
+    data: { email: string; role?: "EDITOR" | "VIEWER" }
+  ) => {
+    const response = await axiosInstance.post(
+      `/project/${projectId}/invite`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Gets all workspace invitations for current logged in user.
+   */
+  getMyInvites: async () => {
+    const response = await axiosInstance.get("/project/invites")
+    const payload: any = response.data
+    return payload?.data || payload
+  },
+
+  /**
+   * Responds to a workspace invitation (ACCEPT or DECLINE).
+   */
+  respondToInvite: async (inviteId: string, action: "ACCEPT" | "DECLINE") => {
+    const response = await axiosInstance.post(
+      `/project/invites/${inviteId}/respond`,
+      { action }
+    )
+    const payload: any = response.data
+    return payload?.data || payload
+  },
 }

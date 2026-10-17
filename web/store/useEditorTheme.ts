@@ -9,9 +9,9 @@ interface EditorThemeState {
 
 const getDefaultTheme = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("theme") || "GitHub Dark"
+    return localStorage.getItem("theme") || "Tomorrow-Night-Bright"
   }
-  return "GitHub Dark"
+  return "Tomorrow-Night-Bright"
 }
 
 export const useEditorTheme = create<EditorThemeState>()((set) => ({

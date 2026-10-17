@@ -54,6 +54,7 @@ export class AuthController {
     return {
       message: 'Logged in successfully',
       user,
+      accessToken,
     };
   }
 

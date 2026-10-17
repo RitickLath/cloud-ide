@@ -1,6 +1,9 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
 import { LandingContent } from "@/components/organism/LandingContent"
+import { NavbarAuth } from "@/components/organism/NavbarAuth"
 
 export default function RootLandingPage() {
   return (
@@ -49,20 +52,7 @@ export default function RootLandingPage() {
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-            >
-              Sign up
-            </Link>
-          </div>
+          <NavbarAuth />
         </div>
       </header>
 

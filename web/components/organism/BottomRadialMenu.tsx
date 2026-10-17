@@ -82,10 +82,10 @@ export function BottomRadialMenu() {
     }
   }
 
-  // Initialize position to bottom-left corner
+  // Initialize position to bottom-right corner so it does not obstruct the sidebar user profile
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setPos(getCornerPosition("bottom-left"))
+      setPos(getCornerPosition("bottom-right"))
     }
     const handleResize = () => {
       setPos(getCornerPosition(corner))

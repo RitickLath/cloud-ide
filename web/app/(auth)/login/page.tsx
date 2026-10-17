@@ -30,6 +30,7 @@ export default function LoginPage() {
         password,
       })
       router.push("/")
+      router.refresh()
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||

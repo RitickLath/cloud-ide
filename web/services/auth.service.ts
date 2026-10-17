@@ -35,7 +35,11 @@ export const AuthService = {
 
   login: async (data: LoginDto) => {
     const res = await axiosInstance.post("/auth/login", data)
-    return res.data
+    const payload: any = res.data?.data || res.data
+    if (payload?.accessToken && typeof document !== "undefined") {
+      document.cookie = `accessToken=${payload.accessToken}; path=/; max-age=604800; SameSite=Lax`
+    }
+    return payload
   },
 
   verifyEmail: async (token: string, email: string) => {

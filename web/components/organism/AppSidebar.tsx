@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Folder,
@@ -13,21 +13,47 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Mail,
+  LogOut,
+  Settings,
 } from "lucide-react"
 import { CreateWorkspaceModal } from "@/components/organism/CreateWorkspaceModal"
 import { useGetAllProjects } from "@/features/queries/useGetAllProjects"
 import { useGetMyInvites } from "@/features/queries/useGetMyInvites"
+import { useGetMe } from "@/features/queries/useGetMe"
+import { AuthService } from "@/services/auth.service"
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+  const { data: user } = useGetMe()
   const { data: projects = [] } = useGetAllProjects()
   const { data: invites = [] } = useGetMyInvites()
   const pendingInvitesCount = invites.filter(
     (i) => i.status === "PENDING"
   ).length
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+      await AuthService.logout()
+    } catch {
+      // ignore
+    } finally {
+      // Clear cookie and redirect to login
+      document.cookie =
+        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      router.push("/login")
+      router.refresh()
+    }
+  }
+
+  const userDisplayName = user?.name || user?.username || "Developer"
+  const userDisplayEmail = user?.email || "user@cloudide.io"
+  const userInitial = (userDisplayName.charAt(0) || "U").toUpperCase()
 
   const navItems = [
     {
@@ -211,10 +237,26 @@ export function AppSidebar() {
             <div className="flex flex-col items-center gap-2">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-blue-500 text-xs font-bold text-white shadow-xs"
-                title="Ritick Lath (ritick@cloudide.io)"
+                title={`${userDisplayName} (${userDisplayEmail})`}
               >
-                R
+                {userInitial}
               </div>
+              <Link
+                href="/settings"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted/30 hover:text-foreground"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-500"
+                title="Log out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => setIsCollapsed(false)}
@@ -226,26 +268,38 @@ export function AppSidebar() {
             </div>
           ) : (
             <div className="flex items-center justify-between rounded-lg p-2 transition hover:bg-muted/20">
-              <div className="flex items-center gap-2.5 truncate">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5 truncate">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-blue-500 text-xs font-bold text-white shadow-sm">
-                  R
+                  {userInitial}
                 </div>
-                <div className="truncate text-left">
+                <div className="min-w-0 flex-1 truncate text-left">
                   <p className="truncate text-xs font-medium text-foreground">
-                    Ritick Lath
+                    {userDisplayName}
                   </p>
                   <p className="truncate text-[10px] text-muted-foreground">
-                    ritick@cloudide.io
+                    {userDisplayEmail}
                   </p>
                 </div>
               </div>
-              <Link
-                href="/settings"
-                className="text-muted-foreground transition hover:text-foreground"
-                title="Settings"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-              </Link>
+
+              <div className="ml-2 flex shrink-0 items-center gap-1">
+                <Link
+                  href="/settings"
+                  className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/30 hover:text-foreground"
+                  title="Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="rounded-md p-1.5 text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-500"
+                  title="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

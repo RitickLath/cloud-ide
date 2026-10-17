@@ -68,6 +68,13 @@ enum SnapshotTrigger {
   SHUTDOWN
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
 enum WorkspaceRole {
   OWNER
   EDITOR
@@ -418,6 +425,7 @@ model Workspace {
 
   owner     User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members   WorkspaceMember[]
+  invites   WorkspaceInvite[]
   snapshots WorkspaceSnapshot[]
   envVars   WorkspaceEnvVar[]
   sessions  WorkspaceSession[]
@@ -454,6 +462,24 @@ model WorkspaceMember {
 
   @@unique([workspaceId, userId])
   @@index([userId])
+}
+
+model WorkspaceInvite {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @db.Uuid
+  email       String        @db.VarChar(255) // Not userId as Invitee might not have account yet
+  role        WorkspaceRole @default(EDITOR)
+  token       String        @unique @db.VarChar(255)
+  status      InviteStatus  @default(PENDING)
+  expiresAt   DateTime      @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email, status])
+  @@index([email, status])
+  @@index([token])
 }
 
 model WorkspaceEnvVar {

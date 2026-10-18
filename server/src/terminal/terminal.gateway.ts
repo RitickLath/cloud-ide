@@ -1,4 +1,6 @@
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
@@ -8,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway(3002, {
+@WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/terminal',
 })
@@ -18,20 +20,23 @@ export class TerminalGateway
   @WebSocketServer()
   server: Server;
 
-  afterInit(server: Socket) {
+  afterInit(server: Server) {
     console.log('Terminal Gateway initialized');
   }
 
   handleConnection(client: Socket) {
-    console.log('Client connected to terminal gateway');
+    console.log('Client connected to terminal gateway:', client.id);
   }
 
   handleDisconnect(client: Socket) {
-    console.log('Client disconnected from terminal gateway');
+    console.log('Client disconnected from terminal gateway:', client.id);
   }
 
-  @SubscribeMessage('')
-  handleMessage(client: Socket, payload: any): string {
-    return 'Hello world!';
+  @SubscribeMessage('terminal:input')
+  handleTerminalInput(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { projectId: string; data: string },
+  ) {
+    client.emit('data', payload.data);
   }
 }

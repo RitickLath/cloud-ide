@@ -21,7 +21,7 @@ import type {
 
 export type * from './watchman.types';
 
-@WebSocketGateway(3002, {
+@WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/workspace',
 })
@@ -39,7 +39,7 @@ export class WatchmanGateway
 
   afterInit(server: Server) {
     this.logger.log(
-      'Watchman WebSocket Gateway initialized on port 3002 (/workspace)',
+      'Watchman WebSocket Gateway initialized on shared port (/workspace)',
     );
   }
 
@@ -150,6 +150,14 @@ export class WatchmanGateway
       projectId: payload.projectId,
       tree,
     });
+  }
+
+  @SubscribeMessage('terminal')
+  async handleTerminal(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: any,
+  ) {
+    console.log('Terminal command received from user', payload);
   }
 
   // Helper method for background tasks / watchers to push disk changes to a project room.

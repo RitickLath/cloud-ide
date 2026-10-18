@@ -11,31 +11,36 @@ export class ProjectService {
   ) {}
 
   async createProjectV1(createDto: CreateProjectDto, userId: string) {
-    const projectId = await this.workspaceService.createProject(
-      createDto.framework,
-      createDto.name,
-    );
+    const projectId = createDto.name
+      .replace(/[^a-zA-Z0-9-]/g, '-')
+      .toLowerCase();
 
-    // Calculate storage size excluding node_modules, .git, venv
-    const storageBytes =
-      await this.workspaceService.calculateWorkspaceSize(projectId);
-
-    // Save workspace in database associated with the logged-in user
+    // 1. Immediately create workspace in DB with status CREATING
     const workspace = await this.prisma.workspace.create({
       data: {
         name: createDto.name,
         slug: projectId,
         framework: createDto.framework,
-        status: 'READY',
+        status: 'CREATING',
         ownerId: userId,
         s3Bucket: 'local-bucket',
         s3Prefix: `workspaces/${projectId}`,
-        storageBytes,
+        storageBytes: BigInt(0),
       },
     });
 
+    // 2. Queue the scaffolding process in the background
+    await this.workspaceService.queueProjectCreation({
+      workspaceId: workspace.id,
+      projectId,
+      framework: createDto.framework,
+      name: createDto.name,
+      userId,
+    });
+
+    // 3. Return instantly
     return {
-      msg: 'This action adds a new project v1',
+      msg: 'Project creation initiated',
       projectId,
       workspace: {
         ...workspace,
@@ -45,30 +50,33 @@ export class ProjectService {
   }
 
   async createProjectGit(gitDto: CreateProjectGitDto, userId: string) {
-    const projectId = await this.workspaceService.createProjectGit(
-      gitDto.gitUrl,
-      gitDto.name,
-    );
+    const projectId = gitDto.name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
 
-    // Calculate storage size excluding node_modules, .git, venv
-    const storageBytes =
-      await this.workspaceService.calculateWorkspaceSize(projectId);
-
-    // Save git workspace in database associated with the logged-in user
+    // 1. Immediately create workspace in DB with status CREATING
     const workspace = await this.prisma.workspace.create({
       data: {
         name: gitDto.name,
         slug: projectId,
         framework: 'git',
         gitUrl: gitDto.gitUrl,
-        status: 'READY',
+        status: 'CREATING',
         ownerId: userId,
         s3Bucket: 'local-bucket',
         s3Prefix: `workspaces/${projectId}`,
-        storageBytes,
+        storageBytes: BigInt(0),
       },
     });
 
+    // 2. Queue the git clone in the background
+    await this.workspaceService.queueProjectGitCreation({
+      workspaceId: workspace.id,
+      projectId,
+      gitUrl: gitDto.gitUrl,
+      name: gitDto.name,
+      userId,
+    });
+
+    // 3. Return instantly
     return {
       msg: 'Git import initiated',
       projectId,

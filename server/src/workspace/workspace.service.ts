@@ -6,6 +6,8 @@ import workspaceConfig from '../config/workspace.config';
 import frameworkConfig from '../config/framework.config';
 import dirTree from 'directory-tree';
 import type { ConfigType } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class WorkspaceService {
@@ -14,7 +16,29 @@ export class WorkspaceService {
     private workspaceConf: ConfigType<typeof workspaceConfig>,
     @Inject(frameworkConfig.KEY)
     private frameworkConf: ConfigType<typeof frameworkConfig>,
+    @InjectQueue('workspace-queue')
+    private readonly workspaceQueue: Queue,
   ) {}
+
+  async queueProjectCreation(data: {
+    workspaceId: string;
+    projectId: string;
+    framework: Framework;
+    name: string;
+    userId: string;
+  }) {
+    return this.workspaceQueue.add('create-project-v1', data);
+  }
+
+  async queueProjectGitCreation(data: {
+    workspaceId: string;
+    projectId: string;
+    gitUrl: string;
+    name: string;
+    userId: string;
+  }) {
+    return this.workspaceQueue.add('create-project-git', data);
+  }
 
   async getAllProjectIds() {
     const rootPath = process.cwd();

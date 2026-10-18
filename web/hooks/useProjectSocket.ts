@@ -42,6 +42,10 @@ const registerWorkspaceEvents = (socket: Socket, onTreeChange?: () => void) => {
   socket.on("folder-change", () => {
     onTreeChange?.()
   })
+
+  socket.on("workspace-ready", (payload: any) => {
+    onTreeChange?.()
+  })
 }
 
 export const useProjectSocket = ({
@@ -55,7 +59,7 @@ export const useProjectSocket = ({
   useEffect(() => {
     if (!projectId || !isEnabled) return
 
-    const socket = io("http://localhost:3002/workspace", {
+    const socket = io("http://localhost:3001/workspace", {
       withCredentials: true,
       transports: ["websocket"],
     })

@@ -80,25 +80,24 @@ export const CreateWorkspaceModal = ({
 
   const handleSubmit = async () => {
     try {
-      let createdProjectId = ""
       if (view === "template") {
-        const res = await createWithTemplate.mutateAsync({
+        await createWithTemplate.mutateAsync({
           framework: selectedFramework,
           name: workspaceName,
         })
-        createdProjectId = res?.data?.projectId
       } else {
-        const res = await createWithGit.mutateAsync({
+        await createWithGit.mutateAsync({
           gitUrl,
           name: workspaceName,
         })
-        createdProjectId = res?.data?.projectId
       }
 
-      if (createdProjectId) {
-        console.log("Hit", createdProjectId)
-        router.push(`/ide/project/${createdProjectId}`)
+      if (onOpenChange) {
+        onOpenChange(false)
       }
+      setWorkspaceName("")
+      setGitUrl("")
+      router.push("/ide/projects")
     } catch (error) {
       console.error("Failed to create workspace:", error)
     }

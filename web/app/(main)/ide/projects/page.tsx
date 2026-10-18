@@ -166,12 +166,18 @@ export default function IdeProjectsPage() {
                         {project.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <Link
-                          href={`/ide/project/${projectSlug}`}
-                          className="line-clamp-1 text-sm font-semibold text-foreground transition hover:text-primary"
-                        >
-                          {project.name}
-                        </Link>
+                        {!isReady ? (
+                          <span className="line-clamp-1 cursor-not-allowed text-sm font-semibold text-foreground/80">
+                            {project.name}
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/ide/project/${projectSlug}`}
+                            className="line-clamp-1 text-sm font-semibold text-foreground transition hover:text-primary"
+                          >
+                            {project.name}
+                          </Link>
+                        )}
                         <p className="text-[11px] text-muted-foreground">
                           {project.framework}
                         </p>
@@ -221,13 +227,20 @@ export default function IdeProjectsPage() {
                       <span>{project.owner?.username || "You"}</span>
                     </div>
 
-                    <Link
-                      href={`/ide/project/${projectSlug}`}
-                      className="flex items-center gap-1 text-xs font-semibold text-primary transition hover:underline"
-                    >
-                      <span>Open IDE</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    {isReady ? (
+                      <Link
+                        href={`/ide/project/${projectSlug}`}
+                        className="flex items-center gap-1 text-xs font-semibold text-primary transition hover:underline"
+                      >
+                        <span>Open IDE</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs text-amber-400/80">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Provisioning...</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

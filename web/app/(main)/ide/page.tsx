@@ -204,21 +204,34 @@ export default function IdeDashboardPage() {
                           {project.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <Link
-                            href={`/ide/project/${projectSlug}`}
-                            className="line-clamp-1 text-sm font-semibold text-foreground hover:text-primary"
-                          >
-                            {project.name}
-                          </Link>
+                          {project.status === "CREATING" ? (
+                            <span className="line-clamp-1 cursor-not-allowed text-sm font-semibold text-foreground/80">
+                              {project.name}
+                            </span>
+                          ) : (
+                            <Link
+                              href={`/ide/project/${projectSlug}`}
+                              className="line-clamp-1 text-sm font-semibold text-foreground hover:text-primary"
+                            >
+                              {project.name}
+                            </Link>
+                          )}
                           <p className="text-[11px] text-muted-foreground">
                             {project.framework}
                           </p>
                         </div>
                       </div>
-                      <span className="flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Ready
-                      </span>
+                      {project.status === "CREATING" ? (
+                        <span className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                          Creating...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          Ready
+                        </span>
+                      )}
                     </div>
 
                     <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">
@@ -233,13 +246,20 @@ export default function IdeDashboardPage() {
                     <span>
                       {new Date(project.createdAt).toLocaleDateString()}
                     </span>
-                    <Link
-                      href={`/ide/project/${projectSlug}`}
-                      className="flex items-center gap-1 font-medium text-primary hover:underline"
-                    >
-                      <span>Open IDE</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    {project.status === "CREATING" ? (
+                      <span className="flex items-center gap-1 text-xs text-amber-400/80">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Provisioning...</span>
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/ide/project/${projectSlug}`}
+                        className="flex items-center gap-1 font-medium text-primary hover:underline"
+                      >
+                        <span>Open IDE</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               )

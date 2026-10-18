@@ -1,5 +1,6 @@
 import React from "react"
 import { BottomRadialMenu } from "@/components/organism/BottomRadialMenu"
+import { WorkspaceNotifier } from "@/components/organism/WorkspaceNotifier"
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -9,6 +10,8 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
       </main>
       {/* Floating Bottom Radial Menu for switching pillars */}
       <BottomRadialMenu />
+      {/* Real-time Workspace Provisioned Pop-up */}
+      <WorkspaceNotifier />
     </div>
   )
 }
